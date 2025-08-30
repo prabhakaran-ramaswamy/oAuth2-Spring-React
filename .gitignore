@@ -1,0 +1,32 @@
+# ---- Node / React ----
+node_modules/
+build/
+dist/
+.cache/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# IDE specific
+.vscode/
+.idea/
+
+# ---- Eclipse ----
+.classpath
+.project
+.settings/
+bin/
+tmp/
+.metadata
+
+# ---- OS files ----
+.DS_Store
+Thumbs.db
