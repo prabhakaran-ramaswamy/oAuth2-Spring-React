@@ -1,32 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Drawer, List, Button, InputNumber, Typography, Space, Divider, Empty, message } from 'antd';
 import { DeleteOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { cartService } from '../services/api.js';
+import { useAppDispatch, useCart, useUpdatingItem } from '../../store/hooks.js';
+import { fetchCart, updateCartItem, removeFromCart, setUpdatingItem } from '../../store/cartSlice.js';
 
 const { Title, Text } = Typography;
 
-const CartDrawer = ({ visible, onClose, onCartUpdate }) => {
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState({});
+const CartDrawer = ({ visible, onClose }) => {
+  const dispatch = useAppDispatch();
+  const { items: cart, loading, error } = useCart();
+  const updatingItem = useUpdatingItem();
 
   useEffect(() => {
     if (visible) {
-      fetchCart();
+      dispatch(fetchCart());
     }
-  }, [visible]);
-
-  const fetchCart = async () => {
-    setLoading(true);
-    try {
-      const response = await cartService.getCart();
-      setCart(response.data.data);
-    } catch (error) {
-      message.error('Failed to fetch cart');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [visible, dispatch]);
 
   const updateQuantity = async (itemId, quantity) => {
     if (quantity <= 0) {
@@ -34,37 +23,32 @@ const CartDrawer = ({ visible, onClose, onCartUpdate }) => {
       return;
     }
 
-    setUpdating(prev => ({ ...prev, [itemId]: true }));
+    dispatch(setUpdatingItem({ itemId, loading: true }));
     try {
-      await cartService.updateItem(itemId, quantity);
-      await fetchCart();
-      if (onCartUpdate) onCartUpdate();
+      await dispatch(updateCartItem({ itemId, quantity })).unwrap();
+      message.success('Item quantity updated');
     } catch (error) {
       message.error('Failed to update item quantity');
     } finally {
-      setUpdating(prev => ({ ...prev, [itemId]: false }));
+      dispatch(setUpdatingItem({ itemId, loading: false }));
     }
   };
 
   const removeItem = async (itemId) => {
-    setUpdating(prev => ({ ...prev, [itemId]: true }));
+    dispatch(setUpdatingItem({ itemId, loading: true }));
     try {
-      await cartService.removeItem(itemId);
-      await fetchCart();
-      if (onCartUpdate) onCartUpdate();
+      await dispatch(removeFromCart(itemId)).unwrap();
       message.success('Item removed from cart');
     } catch (error) {
       message.error('Failed to remove item');
     } finally {
-      setUpdating(prev => ({ ...prev, [itemId]: false }));
+      dispatch(setUpdatingItem({ itemId, loading: false }));
     }
   };
 
-  const clearCart = async () => {
+  const clearCartHandler = async () => {
     try {
-      await cartService.clearCart();
-      setCart({ items: [], totalAmount: 0, totalItems: 0 });
-      if (onCartUpdate) onCartUpdate();
+      await dispatch(clearCart()).unwrap();
       message.success('Cart cleared');
     } catch (error) {
       message.error('Failed to clear cart');
@@ -91,7 +75,7 @@ const CartDrawer = ({ visible, onClose, onCartUpdate }) => {
                     icon={<DeleteOutlined />}
                     danger
                     size="small"
-                    loading={updating[item.id]}
+                    loading={updatingItem[item.id]}
                     onClick={() => removeItem(item.id)}
                   />
                 ]}
@@ -100,13 +84,13 @@ const CartDrawer = ({ visible, onClose, onCartUpdate }) => {
                   title={item.product?.name}
                   description={
                     <Space direction="vertical" size="small">
-                      <Text>${item.product?.price}</Text>
+                      <Text>₹{item.product?.price}</Text>
                       <InputNumber
                         min={1}
                         max={item.product?.stock}
                         value={item.quantity}
                         onChange={(value) => updateQuantity(item.id, value)}
-                        loading={updating[item.id]}
+                        loading={updatingItem[item.id]}
                         size="small"
                       />
                       <Text strong>Subtotal: ${item.subtotal}</Text>
@@ -127,7 +111,7 @@ const CartDrawer = ({ visible, onClose, onCartUpdate }) => {
             <Button type="primary" size="large" block>
               Proceed to Checkout
             </Button>
-            <Button onClick={clearCart} block>
+            <Button onClick={clearCartHandler} block>
               Clear Cart
             </Button>
           </Space>

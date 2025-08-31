@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -10,6 +10,7 @@ const api = axios.create({
 export const productService = {
   getAll: () => api.get('/products'),
   getById: (id) => api.get(`/products/${id}`),
+  getByCategory: (categoryId) => api.get(`/products/category/${categoryId}`),
   create: (product) => api.post('/products', product),
   update: (id, product) => api.put(`/products/${id}`, product),
   delete: (id) => api.delete(`/products/${id}`),
@@ -39,12 +40,23 @@ export const categoryService = {
 };
 
 export const cartService = {
-  getCart: () => api.get('/cart'),
-  addItem: (productId, quantity) => api.post('/cart/items', { productId, quantity }),
+  getCart: () => {
+    console.log('Getting cart'); // Debug log
+    return api.get('/cart');
+  },
+  addItem: (productId, quantity) => {
+    console.log('Adding item to cart:', { productId, quantity }); // Debug log
+    return api.post('/cart/items', { productId, quantity });
+  },
   updateItem: (itemId, quantity) => api.put(`/cart/items/${itemId}`, { quantity }),
   removeItem: (itemId) => api.delete(`/cart/items/${itemId}`),
   clearCart: () => api.delete('/cart'),
-  getCartCount: () => api.get('/cart/count'),
+  getCartCount: () => {
+    console.log('Getting cart count'); // Debug log
+    return api.get('/cart/count');
+  },
+  updateQuantity: (productId, quantity) => api.post('/cart/items', { productId, quantity }),
+  removeFromCart: (productId) => api.delete(`/cart/items/${productId}`),
 };
 
 export const uploadService = {

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Spin, message, Typography } from 'antd';
 import { ShopOutlined } from '@ant-design/icons';
-import { categoryService } from '../services/api.js';
+import { useNavigate } from 'react-router-dom';
+import { categoryService } from '../../services/api.js';
+import ProductImage from '../common/ProductImage.jsx';
 
 const { Title } = Typography;
 const { Meta } = Card;
@@ -9,6 +11,7 @@ const { Meta } = Card;
 const CategoryGrid = ({ onCategorySelect }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCategories();
@@ -18,8 +21,11 @@ const CategoryGrid = ({ onCategorySelect }) => {
     setLoading(true);
     try {
       const response = await categoryService.getAll();
-      setCategories(response.data.data || []);
+      console.log('Categories response in grid:', response.data); // Debug log
+      // Backend returns array directly, not wrapped in data object
+      setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
+      console.error('Failed to fetch categories:', error);
       message.error('Failed to fetch categories');
     } finally {
       setLoading(false);
@@ -39,19 +45,15 @@ const CategoryGrid = ({ onCategorySelect }) => {
             <Card
               hoverable
               cover={
-                <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5' }}>
-                  {category.imageUrl ? (
-                    <img 
-                      alt={category.name} 
-                      src={category.imageUrl} 
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <ShopOutlined style={{ fontSize: 48, color: '#ccc' }} />
-                  )}
-                </div>
+                <ProductImage
+                  src={category.imageUrl}
+                  alt={category.name}
+                  style={{ height: 200 }}
+                  fallbackIcon={<ShopOutlined />}
+                  fallbackText="No Image Available"
+                />
               }
-              onClick={() => onCategorySelect && onCategorySelect(category)}
+              onClick={() => navigate(`/browse-products/${category.id}`)}
             >
               <Meta 
                 title={category.name} 

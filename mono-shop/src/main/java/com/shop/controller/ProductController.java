@@ -24,6 +24,11 @@ public class ProductController {
         return productService.getProductById(id);
     }
 
+    @GetMapping("/category/{categoryId}")
+    public List<Product> getProductsByCategory(@PathVariable Long categoryId) {
+        return productService.getProductsByCategory(categoryId);
+    }
+
     @PostMapping
     public Product createProduct(@RequestBody Product product) {
         return productService.saveProduct(product);
