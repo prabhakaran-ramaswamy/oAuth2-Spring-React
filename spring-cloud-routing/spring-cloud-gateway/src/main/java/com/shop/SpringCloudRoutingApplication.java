@@ -9,5 +9,4 @@ public class SpringCloudRoutingApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SpringCloudRoutingApplication.class, args);
 	}
-
 }
