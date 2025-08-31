@@ -21,7 +21,6 @@ const ProductList = () => {
     setLoading(true);
     try {
       const response = await productService.getAll();
-      console.log('Products response:', response.data); // Debug log
       // Backend returns array directly, not wrapped in data object
       setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -35,7 +34,6 @@ const ProductList = () => {
   const fetchCategories = async () => {
     try {
       const response = await categoryService.getAll();
-      console.log('Categories response for products:', response.data); // Debug log
       // Backend returns array directly, not wrapped in data object
       setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {

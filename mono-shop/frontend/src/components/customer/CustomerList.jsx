@@ -65,7 +65,7 @@ const CustomerList = () => {
 
   return (
     <div>
-      <Title level={2}>Customer Management</Title>
+      <Title level={2}>Customers</Title>
       <Card>
         {customers.length === 0 ? (
           <Empty

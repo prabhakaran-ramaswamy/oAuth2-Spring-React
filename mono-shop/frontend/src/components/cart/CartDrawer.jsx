@@ -1,21 +1,37 @@
-import React, { useEffect } from 'react';
-import { Drawer, List, Button, InputNumber, Typography, Space, Divider, Empty, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Drawer, List, Button, InputNumber, Typography, Space, Divider, Empty, message, Modal, Form, Input } from 'antd';
 import { DeleteOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { useAppDispatch, useCart, useUpdatingItem } from '../../store/hooks.js';
-import { fetchCart, updateCartItem, removeFromCart, setUpdatingItem } from '../../store/cartSlice.js';
+import { cartService, orderService } from '../../services/api.js';
 
 const { Title, Text } = Typography;
 
-const CartDrawer = ({ visible, onClose }) => {
-  const dispatch = useAppDispatch();
-  const { items: cart, loading, error } = useCart();
-  const updatingItem = useUpdatingItem();
+const CartDrawer = ({ visible, onClose, onCartUpdate }) => {
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [updatingItem, setUpdatingItem] = useState({});
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [form] = Form.useForm();
+
+  const fetchCart = async () => {
+    setLoading(true);
+    try {
+      const response = await cartService.getCart();
+      setCart(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to fetch cart:', error);
+      message.error('Failed to fetch cart');
+      setCart([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (visible) {
-      dispatch(fetchCart());
+      fetchCart();
     }
-  }, [visible, dispatch]);
+  }, [visible]);
 
   const updateQuantity = async (itemId, quantity) => {
     if (quantity <= 0) {
@@ -23,35 +39,92 @@ const CartDrawer = ({ visible, onClose }) => {
       return;
     }
 
-    dispatch(setUpdatingItem({ itemId, loading: true }));
+    setUpdatingItem(prev => ({ ...prev, [itemId]: true }));
     try {
-      await dispatch(updateCartItem({ itemId, quantity })).unwrap();
+      await cartService.updateItem(itemId, quantity);
       message.success('Item quantity updated');
+      await fetchCart(); // Refresh cart after update
+      if (onCartUpdate) {
+        onCartUpdate(); // Update cart count in header
+      }
     } catch (error) {
       message.error('Failed to update item quantity');
     } finally {
-      dispatch(setUpdatingItem({ itemId, loading: false }));
+      setUpdatingItem(prev => ({ ...prev, [itemId]: false }));
     }
   };
 
   const removeItem = async (itemId) => {
-    dispatch(setUpdatingItem({ itemId, loading: true }));
+    setUpdatingItem(prev => ({ ...prev, [itemId]: true }));
     try {
-      await dispatch(removeFromCart(itemId)).unwrap();
+      await cartService.removeItem(itemId);
       message.success('Item removed from cart');
+      await fetchCart(); // Refresh cart after removal
+      if (onCartUpdate) {
+        onCartUpdate(); // Update cart count in header
+      }
     } catch (error) {
       message.error('Failed to remove item');
     } finally {
-      dispatch(setUpdatingItem({ itemId, loading: false }));
+      setUpdatingItem(prev => ({ ...prev, [itemId]: false }));
     }
   };
 
   const clearCartHandler = async () => {
     try {
-      await dispatch(clearCart()).unwrap();
+      await cartService.clearCart();
       message.success('Cart cleared');
+      await fetchCart(); // Refresh cart after clearing
+      if (onCartUpdate) {
+        onCartUpdate(); // Update cart count in header
+      }
     } catch (error) {
       message.error('Failed to clear cart');
+    }
+  };
+
+  const proceedToCheckout = () => {
+    setCheckoutModalVisible(true);
+  };
+
+  const handleCheckout = async (values) => {
+    setCheckoutLoading(true);
+    try {
+      // Calculate total
+      const total = cart.reduce((sum, item) => sum + (item.product?.price * item.quantity), 0);
+      
+      // Create order object
+      const orderData = {
+        customerName: values.customerName,
+        customerEmail: values.customerEmail,
+        customerPhone: values.customerPhone,
+        shippingAddress: values.shippingAddress,
+        total: total,
+        status: 'PENDING',
+        orderDate: new Date().toISOString(),
+        // Note: OrderItems would need to be handled separately or the backend modified
+        // For now, we'll create the order and clear the cart
+      };
+
+      // Create the order
+      await orderService.create(orderData);
+      
+      // Clear the cart after successful order
+      await cartService.clearCart();
+      
+      message.success('Order placed successfully!');
+      setCheckoutModalVisible(false);
+      form.resetFields();
+      await fetchCart(); // Refresh cart
+      if (onCartUpdate) {
+        onCartUpdate(); // Update cart count
+      }
+      onClose(); // Close the cart drawer
+    } catch (error) {
+      console.error('Checkout error:', error);
+      message.error('Failed to place order. Please try again.');
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -63,10 +136,10 @@ const CartDrawer = ({ visible, onClose }) => {
       open={visible}
       width={400}
     >
-      {cart && cart.items && cart.items.length > 0 ? (
+      {cart && cart.length > 0 ? (
         <>
           <List
-            dataSource={cart.items}
+            dataSource={cart}
             renderItem={(item) => (
               <List.Item
                 key={item.id}
@@ -103,12 +176,12 @@ const CartDrawer = ({ visible, onClose }) => {
           <Divider />
           <Space direction="vertical" style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Text strong>Total Items: {cart.totalItems}</Text>
+              <Text strong>Total Items: {cart.reduce((sum, item) => sum + item.quantity, 0)}</Text>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Title level={4}>Total: ${cart.totalAmount}</Title>
+              <Title level={4}>Total: ₹{cart.reduce((sum, item) => sum + (item.product?.price * item.quantity), 0).toFixed(2)}</Title>
             </div>
-            <Button type="primary" size="large" block>
+            <Button type="primary" size="large" block onClick={proceedToCheckout}>
               Proceed to Checkout
             </Button>
             <Button onClick={clearCartHandler} block>
@@ -122,6 +195,92 @@ const CartDrawer = ({ visible, onClose }) => {
           description="Your cart is empty"
         />
       )}
+
+      <Modal
+        title="Checkout Details"
+        open={checkoutModalVisible}
+        onCancel={() => {
+          setCheckoutModalVisible(false);
+          form.resetFields();
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleCheckout}
+        >
+          <Form.Item
+            name="customerName"
+            label="Full Name"
+            rules={[{ required: true, message: 'Please enter your full name' }]}
+          >
+            <Input placeholder="Enter your full name" />
+          </Form.Item>
+
+          <Form.Item
+            name="customerEmail"
+            label="Email Address"
+            rules={[
+              { required: true, message: 'Please enter your email' },
+              { type: 'email', message: 'Please enter a valid email' }
+            ]}
+          >
+            <Input placeholder="Enter your email address" />
+          </Form.Item>
+
+          <Form.Item
+            name="customerPhone"
+            label="Phone Number"
+            rules={[
+              { required: true, message: 'Please enter your phone number' },
+              { pattern: /^[\+]?[0-9\s\-\(\)]{10,}$/, message: 'Please enter a valid phone number' }
+            ]}
+          >
+            <Input placeholder="Enter your phone number" />
+          </Form.Item>
+
+          <Form.Item
+            name="shippingAddress"
+            label="Shipping Address"
+            rules={[{ required: true, message: 'Please enter your shipping address' }]}
+          >
+            <Input.TextArea 
+              rows={4} 
+              placeholder="Enter your complete shipping address" 
+            />
+          </Form.Item>
+
+          <div style={{ marginBottom: 16 }}>
+            <Text strong>Order Summary:</Text>
+            <br />
+            <Text>Total Items: {cart.reduce((sum, item) => sum + item.quantity, 0)}</Text>
+            <br />
+            <Text strong style={{ fontSize: '16px' }}>
+              Total Amount: ₹{cart.reduce((sum, item) => sum + (item.product?.price * item.quantity), 0).toFixed(2)}
+            </Text>
+          </div>
+
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => {
+                setCheckoutModalVisible(false);
+                form.resetFields();
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={checkoutLoading}
+              >
+                Place Order
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </Drawer>
   );
 };

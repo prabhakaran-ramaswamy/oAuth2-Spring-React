@@ -16,6 +16,7 @@ public class Order {
 	private Double total;
 	private String customerName;
 	private String customerEmail;
+	private String customerPhone;
 	private String shippingAddress;
 
 	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
@@ -67,6 +68,14 @@ public class Order {
 
 	public void setCustomerEmail(String customerEmail) {
 		this.customerEmail = customerEmail;
+	}
+
+	public String getCustomerPhone() {
+		return customerPhone;
+	}
+
+	public void setCustomerPhone(String customerPhone) {
+		this.customerPhone = customerPhone;
 	}
 
 	public String getShippingAddress() {

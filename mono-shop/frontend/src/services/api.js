@@ -5,6 +5,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable session cookies
 });
 
 export const productService = {
@@ -41,18 +42,15 @@ export const categoryService = {
 
 export const cartService = {
   getCart: () => {
-    console.log('Getting cart'); // Debug log
     return api.get('/cart');
   },
   addItem: (productId, quantity) => {
-    console.log('Adding item to cart:', { productId, quantity }); // Debug log
     return api.post('/cart/items', { productId, quantity });
   },
   updateItem: (itemId, quantity) => api.put(`/cart/items/${itemId}`, { quantity }),
   removeItem: (itemId) => api.delete(`/cart/items/${itemId}`),
   clearCart: () => api.delete('/cart'),
   getCartCount: () => {
-    console.log('Getting cart count'); // Debug log
     return api.get('/cart/count');
   },
   updateQuantity: (productId, quantity) => api.post('/cart/items', { productId, quantity }),

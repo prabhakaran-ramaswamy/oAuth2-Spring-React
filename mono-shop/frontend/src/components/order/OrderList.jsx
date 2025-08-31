@@ -16,7 +16,6 @@ const OrderList = () => {
     setLoading(true);
     try {
       const response = await orderService.getAll();
-      console.log('Orders response:', response.data);
       setOrders(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -74,7 +73,7 @@ const OrderList = () => {
 
   return (
     <div>
-      <Title level={2}>Orders Management</Title>
+      <Title level={2}>Orders</Title>
       <Card>
         <Table
           columns={columns}

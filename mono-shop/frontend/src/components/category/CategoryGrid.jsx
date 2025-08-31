@@ -21,7 +21,6 @@ const CategoryGrid = ({ onCategorySelect }) => {
     setLoading(true);
     try {
       const response = await categoryService.getAll();
-      console.log('Categories response in grid:', response.data); // Debug log
       // Backend returns array directly, not wrapped in data object
       setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {

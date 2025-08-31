@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-// import { Provider } from 'react-redux';
 import { Layout, Menu, Typography, Button, Badge } from 'antd';
 import { ShopOutlined, UserOutlined, ShoppingCartOutlined, AppstoreOutlined, TagsOutlined } from '@ant-design/icons';
-// import { store } from './store/store.js';
-// import { useAppDispatch, useCartCount } from './store/hooks.js';
-// import { fetchCartCount } from './store/cartSlice.js';
 import { cartService } from './services/api.js';
 import ProductList from './components/product/ProductList.jsx';
 import ProductBrowsePage from './components/product/ProductBrowsePage.jsx';
@@ -18,22 +14,28 @@ import ShopPage from './components/shop/ShopPage.jsx';
 const { Header, Content } = Layout;
 const { Title } = Typography;
 
-const App = () => {
+const AppContent = () => {
   const [cartVisible, setCartVisible] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
-  const updateCartCount = async () => {
+  const fetchCartCount = async () => {
     try {
       const response = await cartService.getCartCount();
-      console.log('Cart count response:', response.data);
-      setCartCount(response.data.count || 0);
+      console.log('Cart count API response:', response); // Debug log
+      console.log('Cart count response.data:', response.data); // Debug log
+      // Handle both direct number response and object with count property
+      const count = typeof response.data === 'number' ? response.data : (response.data?.count || 0);
+      console.log('Final cart count:', count); // Debug log
+      setCartCount(count);
     } catch (error) {
       console.error('Failed to fetch cart count:', error);
+      setCartCount(0);
     }
   };
 
   useEffect(() => {
-    updateCartCount();
+    // Fetch initial cart count when app loads
+    fetchCartCount();
   }, []);
 
   const menuItems = [
@@ -101,10 +103,10 @@ const App = () => {
         </Header>
         <Content style={{ padding: '24px', background: '#fff' }}>
           <Routes>
-            <Route path="/" element={<ShopPage onCartUpdate={updateCartCount} />} />
-            <Route path="/shop" element={<ShopPage onCartUpdate={updateCartCount} />} />
-            <Route path="/products" element={<ProductList />} />
-            <Route path="/browse-products/:categoryId" element={<ProductBrowsePage onCartUpdate={updateCartCount} />} />
+            <Route path="/" element={<ShopPage onCartUpdate={fetchCartCount} />} />
+            <Route path="/shop" element={<ShopPage onCartUpdate={fetchCartCount} />} />
+            <Route path="/products" element={<ProductList onCartUpdate={fetchCartCount} />} />
+            <Route path="/browse-products/:categoryId" element={<ProductBrowsePage onCartUpdate={fetchCartCount} />} />
             <Route path="/categories" element={<CategoryList />} />
             <Route path="/customers" element={<CustomerList />} />
             <Route path="/orders" element={<OrderList />} />
@@ -113,11 +115,15 @@ const App = () => {
         <CartDrawer
           visible={cartVisible}
           onClose={() => setCartVisible(false)}
-          onCartUpdate={updateCartCount}
+          onCartUpdate={fetchCartCount}
         />
       </Layout>
     </Router>
   );
+};
+
+const App = () => {
+  return <AppContent />;
 };
 
 export default App;
