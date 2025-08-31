@@ -35,8 +35,8 @@ if %ERRORLEVEL% neq 0 (
 echo shop-model built successfully.
 echo.
 
-REM Build Spring API Gateway
-call :build_service "spring-api-gateway"
+REM Build Spring Cloud Gateway
+call :build_service "spring-cloud-gateway"
 
 REM Build all microservices
 call :build_service "cart-service"
@@ -70,7 +70,7 @@ echo ========================================
 echo.
 echo Built services:
 echo - shop-model (shared dependency)
-echo - Spring API Gateway
+echo - Spring Cloud Gateway
 echo - Cart Service
 echo - Category Service
 echo - Customer Service

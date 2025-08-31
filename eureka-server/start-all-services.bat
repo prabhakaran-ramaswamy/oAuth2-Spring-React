@@ -23,8 +23,8 @@ cd /d "%BASE_DIR%shop-model"
 call mvn clean install
 timeout /t 10
 
-REM Start Spring API Gateway first
-call :start_service "spring-api-gateway" "9090"
+REM Start Spring Cloud Gateway first
+call :start_service "spring-cloud-gateway" "9090"
 
 REM Start all services with updated ports
 call :start_service "cart-service" "9091"
@@ -42,7 +42,7 @@ echo All services are starting...
 echo Check individual command windows for service status.
 echo.
 echo Services:
-echo - Spring API Gateway: http://localhost:9090
+echo - Spring Cloud Gateway: http://localhost:9090
 echo - Cart Service: http://localhost:9091
 echo - Category Service: http://localhost:9092
 echo - Customer Service: http://localhost:9093

@@ -11,9 +11,9 @@
     </parent>
 
     <groupId>com.shop</groupId>
-    <artifactId>spring-cloud-routing</artifactId>
+    <artifactId>spring-api-gateway</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>spring-cloud-routing</name>
+    <name>spring-api-gateway</name>
     <description>API Gateway using Spring Cloud Gateway</description>
 
     <properties>
