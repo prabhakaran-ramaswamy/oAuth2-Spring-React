@@ -1,0 +1,345 @@
+{
+    "info": {
+        "name": "OAuth2 Authorization Code Grant",
+        "description": "OAuth2 Authorization Code flow with GET /authorize and POST /token endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "authorization_server_url",
+            "value": "http://localhost:8080",
+            "type": "string",
+            "description": "Authorization server base URL"
+        },
+        {
+            "key": "client_id",
+            "value": "demo-client",
+            "type": "string",
+            "description": "OAuth2 client identifier"
+        },
+        {
+            "key": "client_secret",
+            "value": "demo-secret",
+            "type": "string",
+            "description": "OAuth2 client secret"
+        },
+        {
+            "key": "redirect_uri",
+            "value": "https://oauth.pstmn.io/v1/callback",
+            "type": "string",
+            "description": "Redirect URI for callback"
+        },
+        {
+            "key": "scopes",
+            "value": "openid profile email read write",
+            "type": "string",
+            "description": "Requested OAuth2 scopes"
+        },
+        {
+            "key": "state",
+            "value": "hv8hf0h2i7d",
+            "type": "string",
+            "description": "State parameter for CSRF protection"
+        },
+        {
+            "key": "authorization_code",
+            "value": "",
+            "type": "string",
+            "description": "Authorization code received from step 1"
+        },
+        {
+            "key": "access_token",
+            "value": "",
+            "type": "string",
+            "description": "Access token received from step 2"
+        },
+        {
+            "key": "refresh_token",
+            "value": "",
+            "type": "string",
+            "description": "Refresh token received from step 2"
+        }
+    ],
+    "item": [
+        {
+            "name": "Step 1: GET /authorize",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{authorization_server_url}}/authorize?response_type=code&state={{state}}&redirect_uri={{redirect_uri}}&scope={{scopes}}&client_id={{client_id}}",
+                    "host": ["{{authorization_server_url}}"],
+                    "path": ["authorize"],
+                    "query": [
+                        {
+                            "key": "response_type",
+                            "value": "code",
+                            "description": "Required. Must be 'code' for authorization code flow"
+                        },
+                        {
+                            "key": "state",
+                            "value": "{{state}}",
+                            "description": "Recommended. Random string for CSRF protection"
+                        },
+                        {
+                            "key": "redirect_uri",
+                            "value": "{{redirect_uri}}",
+                            "description": "Optional. Callback URI after authorization"
+                        },
+                        {
+                            "key": "scope",
+                            "value": "{{scopes}}",
+                            "description": "Optional. Space-separated list of scopes"
+                        },
+                        {
+                            "key": "client_id",
+                            "value": "{{client_id}}",
+                            "description": "Required. OAuth2 client identifier"
+                        }
+                    ]
+                },
+                "description": "Step 1: Authorization Request\n\nThis endpoint initiates the OAuth2 authorization code flow. The user will be redirected to login and then back to the redirect_uri with an authorization code.\n\n**Instructions:**\n1. Send this request or copy the URL and open it in a browser\n2. Login with your credentials\n3. Copy the 'code' parameter from the callback URL\n4. Set the 'authorization_code' variable with this value\n\n**Parameters:**\n- response_type: Must be 'code'\n- client_id: Your application's client ID\n- redirect_uri: Where to redirect after authorization\n- scope: Requested permissions\n- state: CSRF protection token"
+            }
+        },
+        {
+            "name": "Step 2: POST /token",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "// Parse response and save tokens",
+                            "if (pm.response.code === 200) {",
+                            "    const response = pm.response.json();",
+                            "    ",
+                            "    // Save tokens to collection variables",
+                            "    pm.collectionVariables.set('access_token', response.access_token);",
+                            "    ",
+                            "    if (response.refresh_token) {",
+                            "        pm.collectionVariables.set('refresh_token', response.refresh_token);",
+                            "    }",
+                            "    ",
+                            "    // Log token information",
+                            "    console.log('✅ Tokens received successfully!');",
+                            "    console.log('Access Token:', response.access_token.substring(0, 50) + '...');",
+                            "    console.log('Token Type:', response.token_type);",
+                            "    console.log('Expires In:', response.expires_in + ' seconds');",
+                            "    ",
+                            "    if (response.refresh_token) {",
+                            "        console.log('Refresh Token:', response.refresh_token.substring(0, 50) + '...');",
+                            "    }",
+                            "    ",
+                            "    if (response.scope) {",
+                            "        console.log('Granted Scopes:', response.scope);",
+                            "    }",
+                            "    ",
+                            "} else {",
+                            "    console.log('❌ Token request failed');",
+                            "    console.log('Status:', pm.response.code);",
+                            "    console.log('Response:', pm.response.text());",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/x-www-form-urlencoded",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "grant_type",
+                            "value": "authorization_code",
+                            "description": "Required. Must be 'authorization_code'",
+                            "type": "text"
+                        },
+                        {
+                            "key": "code",
+                            "value": "{{authorization_code}}",
+                            "description": "Required. Authorization code from step 1",
+                            "type": "text"
+                        },
+                        {
+                            "key": "redirect_uri",
+                            "value": "{{redirect_uri}}",
+                            "description": "Required if included in authorization request",
+                            "type": "text"
+                        },
+                        {
+                            "key": "client_id",
+                            "value": "{{client_id}}",
+                            "description": "Required. OAuth2 client identifier",
+                            "type": "text"
+                        },
+                        {
+                            "key": "client_secret",
+                            "value": "{{client_secret}}",
+                            "description": "Required. OAuth2 client secret",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{authorization_server_url}}/token",
+                    "host": ["{{authorization_server_url}}"],
+                    "path": ["token"]
+                },
+                "description": "Step 2: Token Exchange\n\nExchange the authorization code received from step 1 for an access token.\n\n**Prerequisites:**\n1. Must have completed Step 1 (GET /authorize)\n2. Must have set the 'authorization_code' variable with the code from the callback\n\n**Request Body:**\n- grant_type: Must be 'authorization_code'\n- code: The authorization code from step 1\n- redirect_uri: Same as used in step 1\n- client_id: Your application's client ID\n- client_secret: Your application's client secret\n\n**Response:**\n- access_token: Token for accessing protected resources\n- token_type: Usually 'Bearer'\n- expires_in: Token lifetime in seconds\n- refresh_token: Token for getting new access tokens\n- scope: Granted scopes"
+            }
+        },
+        {
+            "name": "Step 3: Test Protected Resource",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{access_token}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{authorization_server_url}}/api/protected",
+                    "host": ["{{authorization_server_url}}"],
+                    "path": ["api", "protected"]
+                },
+                "description": "Step 3: Access Protected Resource\n\nTest accessing a protected resource using the access token obtained from step 2.\n\n**Prerequisites:**\n1. Must have completed Step 2 (POST /token)\n2. Access token must be valid and not expired\n\n**Authorization:**\n- Type: Bearer Token\n- Token: Uses the access_token variable from step 2\n\n**Expected Response:**\n- 200 OK: Access granted\n- 401 Unauthorized: Token invalid or expired\n- 403 Forbidden: Token valid but insufficient permissions"
+            }
+        },
+        {
+            "name": "Step 4: Refresh Token (Optional)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "// Parse response and update tokens",
+                            "if (pm.response.code === 200) {",
+                            "    const response = pm.response.json();",
+                            "    ",
+                            "    // Update access token",
+                            "    pm.collectionVariables.set('access_token', response.access_token);",
+                            "    ",
+                            "    // Update refresh token if provided",
+                            "    if (response.refresh_token) {",
+                            "        pm.collectionVariables.set('refresh_token', response.refresh_token);",
+                            "    }",
+                            "    ",
+                            "    console.log('✅ Tokens refreshed successfully!');",
+                            "    console.log('New Access Token:', response.access_token.substring(0, 50) + '...');",
+                            "    ",
+                            "} else {",
+                            "    console.log('❌ Token refresh failed');",
+                            "    console.log('Status:', pm.response.code);",
+                            "    console.log('Response:', pm.response.text());",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/x-www-form-urlencoded",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "grant_type",
+                            "value": "refresh_token",
+                            "description": "Required. Must be 'refresh_token'",
+                            "type": "text"
+                        },
+                        {
+                            "key": "refresh_token",
+                            "value": "{{refresh_token}}",
+                            "description": "Required. Refresh token from previous token response",
+                            "type": "text"
+                        },
+                        {
+                            "key": "client_id",
+                            "value": "{{client_id}}",
+                            "description": "Required. OAuth2 client identifier",
+                            "type": "text"
+                        },
+                        {
+                            "key": "client_secret",
+                            "value": "{{client_secret}}",
+                            "description": "Required. OAuth2 client secret",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{authorization_server_url}}/token",
+                    "host": ["{{authorization_server_url}}"],
+                    "path": ["token"]
+                },
+                "description": "Step 4: Refresh Access Token\n\nUse the refresh token to obtain a new access token without requiring user re-authentication.\n\n**Prerequisites:**\n1. Must have a valid refresh_token from step 2\n2. Refresh token must not be expired\n\n**Request Body:**\n- grant_type: Must be 'refresh_token'\n- refresh_token: The refresh token from previous response\n- client_id: Your application's client ID\n- client_secret: Your application's client secret\n\n**Response:**\n- access_token: New access token\n- token_type: Usually 'Bearer'\n- expires_in: New token lifetime\n- refresh_token: May be a new refresh token or the same one"
+            }
+        }
+    ],
+    "auth": {
+        "type": "noauth"
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ]
+}
