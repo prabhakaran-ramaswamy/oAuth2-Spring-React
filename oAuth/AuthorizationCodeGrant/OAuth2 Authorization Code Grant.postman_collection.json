@@ -1,0 +1,391 @@
+{
+	"info": {
+		"_postman_id": "93f003cc-b7d1-419d-a7a1-155489663ecb",
+		"name": "OAuth2 Authorization Code Grant",
+		"description": "OAuth2 Authorization Code flow with GET /authorize and POST /token endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "10250813"
+	},
+	"item": [
+		{
+			"name": "Step 1: No Access",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "{{access_token}}"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJraWQiOiJlNGUyMjIyNS0zODRjLTQ0ZWMtODhhZC1kM2U1ZTkyNWUxOTUiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImF1ZCI6ImRlbW8tY2xpZW50IiwibmJmIjoxNzU2NzUzMjA2LCJzY29wZSI6WyJvcGVuaWQiLCJwcm9maWxlIl0sImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIsImV4cCI6MTc1Njc1NTAwNiwiaWF0IjoxNzU2NzUzMjA2LCJqdGkiOiIzNjIyNTE3OC1jMDE2LTQ5ZTUtOTFmNC1mNmE3OGU4OWU3MTIifQ.R_50ddf6gXHaawnR-OnmChHIYBKzy08Z-_0UQ4RCoa21m64glLgweEUwexwFvnI95dB_4F3scIzyBRKWbmaz4ZzKH0cJDkg6ZH-E_Wwz4fNjvUpo3014oPNQXdKUAsuWRdXJhKukjKbhd1zeTU9QvQmlCgi5PfqNXMyzRC-4WCs28bZgPBUrFwvUKDs74zq_f_qOBYbHKaSGeyqLgNAClz58lb9mt02CTpblUmpf6p3Ve0moCvjPlrg2fcp3EKYCkOxfqzDyjGqEfZy7sXEAoE91iDN_zeT_x0amFpffo-c-ANi-bO3WiAX0iTJ0yTL7Ky3ZYeifoqqCzaXjAj46bA",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": "http://localhost:8081/api/employees",
+				"description": "Step 3: Access Protected Resource\n\nTest accessing a protected resource using the access token obtained from step 2.\n\n**Prerequisites:**\n1. Must have completed Step 2 (POST /token)\n2. Access token must be valid and not expired\n\n**Authorization:**\n- Type: Bearer Token\n- Token: Uses the access_token variable from step 2\n\n**Expected Response:**\n- 200 OK: Access granted\n- 401 Unauthorized: Token invalid or expired\n- 403 Forbidden: Token valid but insufficient permissions"
+			},
+			"response": []
+		},
+		{
+			"name": "Step 2: GET /authorize",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/oauth2/authorize?response_type=code&state=sample state-this is fixed value&redirect_uri=http://localhost:8081/callback&scope=openid profile&client_id=demo-client",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"oauth2",
+						"authorize"
+					],
+					"query": [
+						{
+							"key": "response_type",
+							"value": "code",
+							"description": "Required. Must be 'code' for authorization code flow"
+						},
+						{
+							"key": "state",
+							"value": "sample state-this is fixed value",
+							"description": "Recommended. Random string for CSRF protection"
+						},
+						{
+							"key": "redirect_uri",
+							"value": "http://localhost:8081/callback",
+							"description": "Optional. Callback URI after authorization"
+						},
+						{
+							"key": "scope",
+							"value": "openid profile",
+							"description": "Optional. Space-separated list of scopes"
+						},
+						{
+							"key": "client_id",
+							"value": "demo-client",
+							"description": "Required. OAuth2 client identifier"
+						}
+					]
+				},
+				"description": "Step 1: Authorization Request\n\nThis endpoint initiates the OAuth2 authorization code flow. The user will be redirected to login and then back to the redirect_uri with an authorization code.\n\n**Instructions:**\n1. Send this request or copy the URL and open it in a browser\n2. Login with your credentials\n3. Copy the 'code' parameter from the callback URL\n4. Set the 'authorization_code' variable with this value\n\n**Parameters:**\n- response_type: Must be 'code'\n- client_id: Your application's client ID\n- redirect_uri: Where to redirect after authorization\n- scope: Requested permissions\n- state: CSRF protection token"
+			},
+			"response": []
+		},
+		{
+			"name": "Step 3: POST /token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Parse response and save tokens",
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    // Save tokens to collection variables",
+							"    pm.collectionVariables.set('access_token', response.access_token);",
+							"    ",
+							"    if (response.refresh_token) {",
+							"        pm.collectionVariables.set('refresh_token', response.refresh_token);",
+							"    }",
+							"    ",
+							"    // Log token information",
+							"    console.log('✅ Tokens received successfully!');",
+							"    console.log('Access Token:', response.access_token.substring(0, 50) + '...');",
+							"    console.log('Token Type:', response.token_type);",
+							"    console.log('Expires In:', response.expires_in + ' seconds');",
+							"    ",
+							"    if (response.refresh_token) {",
+							"        console.log('Refresh Token:', response.refresh_token.substring(0, 50) + '...');",
+							"    }",
+							"    ",
+							"    if (response.scope) {",
+							"        console.log('Granted Scopes:', response.scope);",
+							"    }",
+							"    ",
+							"} else {",
+							"    console.log('❌ Token request failed');",
+							"    console.log('Status:', pm.response.code);",
+							"    console.log('Response:', pm.response.text());",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "authorization_code",
+							"description": "Required. Must be 'authorization_code'",
+							"type": "text"
+						},
+						{
+							"key": "code",
+							"value": "s8z64Dfz_2lMVAWCA57XxMURj0Ws5kk1Ms76i0ob9dPDB5zNeYtLI25F00hvKZ87Qvfe9x4PI63gak_wul8ImiaEPGVa0-VSynJsAU8xssZYEEK8W4eyviKY8IulxhYs",
+							"description": "Required. Authorization code from step 1",
+							"type": "text"
+						},
+						{
+							"key": "redirect_uri",
+							"value": "http://localhost:8081/callback",
+							"description": "Required if included in authorization request",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "demo-client",
+							"description": "Required. OAuth2 client identifier",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "demo-secret",
+							"description": "Required. OAuth2 client secret",
+							"type": "text"
+						}
+					]
+				},
+				"url": "http://localhost:8080/oauth2/token",
+				"description": "Step 2: Token Exchange\n\nExchange the authorization code received from step 1 for an access token.\n\n**Prerequisites:**\n1. Must have completed Step 1 (GET /authorize)\n2. Must have set the 'authorization_code' variable with the code from the callback\n\n**Request Body:**\n- grant_type: Must be 'authorization_code'\n- code: The authorization code from step 1\n- redirect_uri: Same as used in step 1\n- client_id: Your application's client ID\n- client_secret: Your application's client secret\n\n**Response:**\n- access_token: Token for accessing protected resources\n- token_type: Usually 'Bearer'\n- expires_in: Token lifetime in seconds\n- refresh_token: Token for getting new access tokens\n- scope: Granted scopes"
+			},
+			"response": []
+		},
+		{
+			"name": "Step 4: Test Protected Resource",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "{{access_token}}"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJraWQiOiJiYjljYTFhZC0wNjAwLTQzNWYtOTZlNS00ZjM1NmNjNjg0YzIiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImF1ZCI6ImRlbW8tY2xpZW50IiwibmJmIjoxNzU2NzcyNDA1LCJzY29wZSI6WyJvcGVuaWQiLCJwcm9maWxlIl0sImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIsImV4cCI6MTc1Njc3NDIwNSwiaWF0IjoxNzU2NzcyNDA1LCJqdGkiOiI2ZTRiMjAzMy0wNjU0LTQ3YzUtYjM0NS01YWQ0MjgwNjIzNmQifQ.sjB0kG6zyjybuE67kZwTuUmEXhT_CMujfvX21UAlwAeGB-Vjuhu46D6hAOadgorQViHKS6CbAmruTVfqi0L1XDm9ES4ku-oTaCayVf-_5ZN-8nIFE16NlgwVgwV6StAmnuDLosY4XKIi5DHH_5Fm1Yzpg5p9_ckxxdnYuzeoEaHPmsrEllZ8lp-ahzsO9XbcYkZjHyJR5rVT43hGtClXaKkR96YK52YRX7PUYAoJjOgjyfZBLafsx52sSdBcvXDrIzX1GHiXVltS8hcWK-U6V8vzcI1cUszuF7dy42JMXNgN7IDVrK3vrs1ufICrOlkiP5xrUd2F5CaxHn4zsqMvjg",
+						"type": "text"
+					}
+				],
+				"url": "http://localhost:8081/api/employees",
+				"description": "Step 3: Access Protected Resource\n\nTest accessing a protected resource using the access token obtained from step 2.\n\n**Prerequisites:**\n1. Must have completed Step 2 (POST /token)\n2. Access token must be valid and not expired\n\n**Authorization:**\n- Type: Bearer Token\n- Token: Uses the access_token variable from step 2\n\n**Expected Response:**\n- 200 OK: Access granted\n- 401 Unauthorized: Token invalid or expired\n- 403 Forbidden: Token valid but insufficient permissions"
+			},
+			"response": []
+		},
+		{
+			"name": "Step 5: Refresh Token (Optional)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Parse response and update tokens",
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    // Update access token",
+							"    pm.collectionVariables.set('access_token', response.access_token);",
+							"    ",
+							"    // Update refresh token if provided",
+							"    if (response.refresh_token) {",
+							"        pm.collectionVariables.set('refresh_token', response.refresh_token);",
+							"    }",
+							"    ",
+							"    console.log('✅ Tokens refreshed successfully!');",
+							"    console.log('New Access Token:', response.access_token.substring(0, 50) + '...');",
+							"    ",
+							"} else {",
+							"    console.log('❌ Token refresh failed');",
+							"    console.log('Status:', pm.response.code);",
+							"    console.log('Response:', pm.response.text());",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "refresh_token",
+							"description": "Required. Must be 'refresh_token'",
+							"type": "text"
+						},
+						{
+							"key": "refresh_token",
+							"value": "{{refresh_token}}",
+							"description": "Required. Refresh token from previous token response",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{client_id}}",
+							"description": "Required. OAuth2 client identifier",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{client_secret}}",
+							"description": "Required. OAuth2 client secret",
+							"type": "text"
+						}
+					]
+				},
+				"url": "http://localhost:8080/oauth2/oauth2/token",
+				"description": "Step 4: Refresh Access Token\n\nUse the refresh token to obtain a new access token without requiring user re-authentication.\n\n**Prerequisites:**\n1. Must have a valid refresh_token from step 2\n2. Refresh token must not be expired\n\n**Request Body:**\n- grant_type: Must be 'refresh_token'\n- refresh_token: The refresh token from previous response\n- client_id: Your application's client ID\n- client_secret: Your application's client secret\n\n**Response:**\n- access_token: New access token\n- token_type: Usually 'Bearer'\n- expires_in: New token lifetime\n- refresh_token: May be a new refresh token or the same one"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "authorization_server_url",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": {
+				"content": "Authorization server base URL",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "client_id",
+			"value": "demo-client",
+			"type": "string",
+			"description": {
+				"content": "OAuth2 client identifier",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "client_secret",
+			"value": "demo-secret",
+			"type": "string",
+			"description": {
+				"content": "OAuth2 client secret",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "redirect_uri",
+			"value": "https://oauth.pstmn.io/v1/callback",
+			"type": "string",
+			"description": {
+				"content": "Redirect URI for callback",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "scopes",
+			"value": "openid profile email read write",
+			"type": "string",
+			"description": {
+				"content": "Requested OAuth2 scopes",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "state",
+			"value": "hv8hf0h2i7d",
+			"type": "string",
+			"description": {
+				"content": "State parameter for CSRF protection",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "authorization_code",
+			"value": "",
+			"type": "string",
+			"description": {
+				"content": "Authorization code received from step 1",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string",
+			"description": {
+				"content": "Access token received from step 2",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string",
+			"description": {
+				"content": "Refresh token received from step 2",
+				"type": "text/plain"
+			}
+		}
+	]
+}

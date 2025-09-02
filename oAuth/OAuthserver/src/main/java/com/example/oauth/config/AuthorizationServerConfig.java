@@ -56,12 +56,25 @@ public class AuthorizationServerConfig {
 	}
 
 	@Bean
+	@Order(2)
+	public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+		http.authorizeHttpRequests((authorize) -> authorize
+				.requestMatchers("/actuator/health", "/error").permitAll()
+				.anyRequest().authenticated()
+			)
+			.formLogin(Customizer.withDefaults());
+		
+		return http.build();
+	}
+
+	@Bean
 	public RegisteredClientRepository registeredClientRepository() {
 		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
 			.clientId("demo-client")
-			.clientSecret("{noop}demo-secret") // Use {noop} prefix with existing passwordEncoder
+			.clientSecret("{noop}demo-secret")
 			.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
 			.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+			.clientAuthenticationMethod(ClientAuthenticationMethod.NONE) // Enable PKCE for public clients
 			.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
 			.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
 			.authorizationGrantType(AuthorizationGrantType.PASSWORD)
@@ -81,7 +94,7 @@ public class AuthorizationServerConfig {
 				.build())
 			.clientSettings(ClientSettings.builder()
 				.requireAuthorizationConsent(false)
-				.requireProofKey(false)
+				.requireProofKey(true) // Enable PKCE requirement
 				.build())
 			.build();
 
@@ -91,6 +104,7 @@ public class AuthorizationServerConfig {
 		System.out.println("Client Secret: " + registeredClient.getClientSecret());
 		System.out.println("Redirect URIs: " + registeredClient.getRedirectUris());
 		System.out.println("Grant Types: " + registeredClient.getAuthorizationGrantTypes());
+		System.out.println("PKCE Required: " + registeredClient.getClientSettings().isRequireProofKey());
 
 		return new InMemoryRegisteredClientRepository(registeredClient);
 	}
@@ -143,7 +157,18 @@ public class AuthorizationServerConfig {
 			.authorities("ROLE_ADMIN", "ROLE_USER", "read", "write", "delete")
 			.build();
 
+		// Debug output
+		System.out.println("=== UserDetailsService Debug ===");
+		System.out.println("Available users for password grant:");
+		System.out.println("- testuser/testpassword");
+		System.out.println("- admin/admin");
+
 		return new InMemoryUserDetailsManager(user, admin);
+	}
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
 	}
 
 }
