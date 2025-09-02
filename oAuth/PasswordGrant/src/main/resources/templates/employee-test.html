@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee API Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .section h3 { margin-top: 0; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"], input[type="date"], textarea, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; }
+        button:hover { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+        .response { margin-top: 15px; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        .hidden { display: none; }
+        .row { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Employee API Test with OAuth2</h1>
+        <p>Test Employee API operations using OAuth2 Bearer tokens.</p>
+        
+        <!-- Token Setup -->
+        <div class="section">
+            <h3>Access Token</h3>
+            <div class="form-group">
+                <label for="accessToken">Bearer Token:</label>
+                <textarea id="accessToken" rows="3" placeholder="Paste your access token here"></textarea>
+            </div>
+            <button onclick="window.open('/password-grant', '_blank')">Get Token from Password Grant</button>
+        </div>
+        
+        <!-- Get All Employees -->
+        <div class="section">
+            <h3>Get All Employees</h3>
+            <button onclick="getAllEmployees()">Fetch All Employees</button>
+            <div id="allEmployeesResponse" class="response hidden"></div>
+        </div>
+        
+        <!-- Get Employee by ID -->
+        <div class="section">
+            <h3>Get Employee by ID</h3>
+            <div class="form-group">
+                <label for="employeeId">Employee ID:</label>
+                <input type="number" id="employeeId" placeholder="Enter employee ID">
+            </div>
+            <button onclick="getEmployeeById()">Get Employee</button>
+            <div id="employeeByIdResponse" class="response hidden"></div>
+        </div>
+        
+        <!-- Create Employee -->
+        <div class="section">
+            <h3>Create New Employee</h3>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="createName">Name:</label>
+                        <input type="text" id="createName" placeholder="Full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="createEmail">Email:</label>
+                        <input type="text" id="createEmail" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="createDepartment">Department:</label>
+                        <input type="text" id="createDepartment" placeholder="IT, HR, Finance, etc.">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="createSalary">Salary:</label>
+                        <input type="number" id="createSalary" placeholder="50000">
+                    </div>
+                    <div class="form-group">
+                        <label for="createDob">Date of Birth:</label>
+                        <input type="date" id="createDob">
+                    </div>
+                    <div class="form-group">
+                        <label for="createJoinedDate">Joined Date:</label>
+                        <input type="date" id="createJoinedDate">
+                    </div>
+                </div>
+            </div>
+            <button onclick="createEmployee()">Create Employee</button>
+            <div id="createEmployeeResponse" class="response hidden"></div>
+        </div>
+        
+        <!-- Search Operations -->
+        <div class="section">
+            <h3>Search Employees</h3>
+            <div class="row">
+                <div class="col">
+                    <h4>Search by Department</h4>
+                    <div class="form-group">
+                        <label for="searchDepartment">Department:</label>
+                        <input type="text" id="searchDepartment" placeholder="IT, HR, Finance">
+                    </div>
+                    <button onclick="searchByDepartment()">Search by Department</button>
+                    <div id="departmentSearchResponse" class="response hidden"></div>
+                </div>
+                <div class="col">
+                    <h4>Search by Name</h4>
+                    <div class="form-group">
+                        <label for="searchName">Name (contains):</label>
+                        <input type="text" id="searchName" placeholder="Enter name to search">
+                    </div>
+                    <button onclick="searchByName()">Search by Name</button>
+                    <div id="nameSearchResponse" class="response hidden"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Update Employee -->
+        <div class="section">
+            <h3>Update Employee</h3>
+            <div class="form-group">
+                <label for="updateId">Employee ID to Update:</label>
+                <input type="number" id="updateId" placeholder="Enter employee ID">
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="updateName">Name:</label>
+                        <input type="text" id="updateName" placeholder="Full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="updateEmail">Email:</label>
+                        <input type="text" id="updateEmail" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="updateDepartment">Department:</label>
+                        <input type="text" id="updateDepartment" placeholder="IT, HR, Finance, etc.">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="updateSalary">Salary:</label>
+                        <input type="number" id="updateSalary" placeholder="50000">
+                    </div>
+                    <div class="form-group">
+                        <label for="updateDob">Date of Birth:</label>
+                        <input type="date" id="updateDob">
+                    </div>
+                    <div class="form-group">
+                        <label for="updateJoinedDate">Joined Date:</label>
+                        <input type="date" id="updateJoinedDate">
+                    </div>
+                </div>
+            </div>
+            <button onclick="updateEmployee()">Update Employee</button>
+            <div id="updateEmployeeResponse" class="response hidden"></div>
+        </div>
+        
+        <!-- Delete Employee -->
+        <div class="section">
+            <h3>Delete Employee</h3>
+            <div class="form-group">
+                <label for="deleteId">Employee ID to Delete:</label>
+                <input type="number" id="deleteId" placeholder="Enter employee ID">
+            </div>
+            <button class="danger" onclick="deleteEmployee()">Delete Employee</button>
+            <div id="deleteEmployeeResponse" class="response hidden"></div>
+        </div>
+    </div>
+    
+    <script>
+        function getAuthHeaders() {
+            const token = document.getElementById('accessToken').value.trim();
+            if (!token) {
+                throw new Error('Access token is required');
+            }
+            return {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        function showResponse(elementId, response, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.className = `response ${isSuccess ? 'success' : 'error'}`;
+            element.innerHTML = '<pre>' + JSON.stringify(response, null, 2) + '</pre>';
+            element.classList.remove('hidden');
+        }
+        
+        function showError(elementId, error) {
+            showResponse(elementId, { error: error.message || error }, false);
+        }
+        
+        async function getAllEmployees() {
+            try {
+                const response = await fetch('/api/employees', {
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+                showResponse('allEmployeesResponse', result, response.ok);
+            } catch (error) {
+                showError('allEmployeesResponse', error);
+            }
+        }
+        
+        async function getEmployeeById() {
+            const id = document.getElementById('employeeId').value;
+            if (!id) {
+                showError('employeeByIdResponse', { error: 'Employee ID is required' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/employees/${id}`, {
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+                showResponse('employeeByIdResponse', result, response.ok);
+            } catch (error) {
+                showError('employeeByIdResponse', error);
+            }
+        }
+        
+        async function createEmployee() {
+            const employee = {
+                name: document.getElementById('createName').value,
+                email: document.getElementById('createEmail').value,
+                department: document.getElementById('createDepartment').value,
+                salary: parseFloat(document.getElementById('createSalary').value),
+                dateOfBirth: document.getElementById('createDob').value,
+                joinedDate: document.getElementById('createJoinedDate').value
+            };
+            
+            try {
+                const response = await fetch('/api/employees', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(employee)
+                });
+                const result = await response.json();
+                showResponse('createEmployeeResponse', result, response.ok);
+                
+                if (response.ok) {
+                    // Clear form
+                    ['createName', 'createEmail', 'createDepartment', 'createSalary', 'createDob', 'createJoinedDate']
+                        .forEach(id => document.getElementById(id).value = '');
+                }
+            } catch (error) {
+                showError('createEmployeeResponse', error);
+            }
+        }
+        
+        async function updateEmployee() {
+            const id = document.getElementById('updateId').value;
+            if (!id) {
+                showError('updateEmployeeResponse', { error: 'Employee ID is required' });
+                return;
+            }
+            
+            const employee = {
+                name: document.getElementById('updateName').value,
+                email: document.getElementById('updateEmail').value,
+                department: document.getElementById('updateDepartment').value,
+                salary: parseFloat(document.getElementById('updateSalary').value),
+                dateOfBirth: document.getElementById('updateDob').value,
+                joinedDate: document.getElementById('updateJoinedDate').value
+            };
+            
+            try {
+                const response = await fetch(`/api/employees/${id}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(employee)
+                });
+                const result = await response.json();
+                showResponse('updateEmployeeResponse', result, response.ok);
+            } catch (error) {
+                showError('updateEmployeeResponse', error);
+            }
+        }
+        
+        async function deleteEmployee() {
+            const id = document.getElementById('deleteId').value;
+            if (!id) {
+                showError('deleteEmployeeResponse', { error: 'Employee ID is required' });
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to delete this employee?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/employees/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+                showResponse('deleteEmployeeResponse', result, response.ok);
+            } catch (error) {
+                showError('deleteEmployeeResponse', error);
+            }
+        }
+        
+        async function searchByDepartment() {
+            const department = document.getElementById('searchDepartment').value;
+            if (!department) {
+                showError('departmentSearchResponse', { error: 'Department is required' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/employees/department/${encodeURIComponent(department)}`, {
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+                showResponse('departmentSearchResponse', result, response.ok);
+            } catch (error) {
+                showError('departmentSearchResponse', error);
+            }
+        }
+        
+        async function searchByName() {
+            const name = document.getElementById('searchName').value;
+            if (!name) {
+                showError('nameSearchResponse', { error: 'Name is required' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/employees/search/name?q=${encodeURIComponent(name)}`, {
+                    headers: getAuthHeaders()
+                });
+                const result = await response.json();
+                showResponse('nameSearchResponse', result, response.ok);
+            } catch (error) {
+                showError('nameSearchResponse', error);
+            }
+        }
+    </script>
+</body>
+</html>
